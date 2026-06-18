@@ -7,17 +7,20 @@
 import sys
 import types
 import inspect
+import importlib.machinery
+from types import SimpleNamespace
 
 
 class _NoOpWidget:
     """A no-op stand-in for any ipywidgets widget class."""
 
-    children = []
-
     def __init__(self, *args, **kwargs):
         # Preserve value/options so _Interact can extract call defaults
         object.__setattr__(self, "value", kwargs.get("value", None))
         object.__setattr__(self, "options", kwargs.get("options", []))
+        object.__setattr__(self, "children", tuple(kwargs.get("children", ())))
+        object.__setattr__(self, "style", kwargs.get("style", SimpleNamespace()))
+        object.__setattr__(self, "layout", kwargs.get("layout", SimpleNamespace()))
 
     def __enter__(self):
         return self
@@ -31,6 +34,9 @@ class _NoOpWidget:
     def __getattr__(self, name):
         # Return a no-op callable for any unknown method/attribute
         return lambda *args, **kwargs: None
+
+    def close(self):
+        pass
 
 
 class _Interact:
@@ -87,8 +93,12 @@ class _StubModule(types.ModuleType):
 
 
 stub = _StubModule("ipywidgets")
-stub.widgets = stub  # support: from ipywidgets import widgets
+stub.__spec__ = importlib.machinery.ModuleSpec("ipywidgets", loader=None)
+stub.__path__ = []
+widgets_stub = _StubModule("ipywidgets.widgets")
+widgets_stub.__spec__ = importlib.machinery.ModuleSpec("ipywidgets.widgets", loader=None)
+stub.widgets = widgets_stub  # support: from ipywidgets import widgets
 sys.modules["ipywidgets"] = stub
-sys.modules["ipywidgets.widgets"] = stub
+sys.modules["ipywidgets.widgets"] = widgets_stub
 
 print("ipywidgets stubbed for headless CI execution")
