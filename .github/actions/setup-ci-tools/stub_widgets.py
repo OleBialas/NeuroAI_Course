@@ -16,10 +16,9 @@ class _NoOpWidget:
 
     def __init__(self, *args, **kwargs):
         # Preserve value/options so _Interact can extract call defaults
-        children = kwargs.get("children", args[0] if args else ())
-        object.__setattr__(self, "value", kwargs.get("value", None))
+        object.__setattr__(self, "value", kwargs.get("value", args[0] if args else None))
         object.__setattr__(self, "options", kwargs.get("options", []))
-        object.__setattr__(self, "children", tuple(children or ()))
+        object.__setattr__(self, "children", tuple(kwargs.get("children", ())))
         object.__setattr__(self, "style", kwargs.get("style", SimpleNamespace()))
         object.__setattr__(self, "layout", kwargs.get("layout", SimpleNamespace()))
 
@@ -38,6 +37,15 @@ class _NoOpWidget:
 
     def close(self):
         pass
+
+
+class _ContainerWidget(_NoOpWidget):
+    """No-op widget for containers such as HBox/VBox/Box."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        children = kwargs.get("children", args[0] if args else ())
+        object.__setattr__(self, "children", tuple(children or ()))
 
 
 class _Interact:
@@ -90,6 +98,8 @@ class _StubModule(types.ModuleType):
     def __getattr__(self, name):
         if name.startswith("__"):
             raise AttributeError(name)
+        if name in {"Box", "HBox", "VBox", "GridBox"}:
+            return _ContainerWidget
         return _NoOpWidget
 
 
