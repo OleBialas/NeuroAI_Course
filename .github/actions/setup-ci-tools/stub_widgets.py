@@ -16,9 +16,10 @@ class _NoOpWidget:
 
     def __init__(self, *args, **kwargs):
         # Preserve value/options so _Interact can extract call defaults
+        children = kwargs.get("children", args[0] if args else ())
         object.__setattr__(self, "value", kwargs.get("value", None))
         object.__setattr__(self, "options", kwargs.get("options", []))
-        object.__setattr__(self, "children", tuple(kwargs.get("children", ())))
+        object.__setattr__(self, "children", tuple(children or ()))
         object.__setattr__(self, "style", kwargs.get("style", SimpleNamespace()))
         object.__setattr__(self, "layout", kwargs.get("layout", SimpleNamespace()))
 
